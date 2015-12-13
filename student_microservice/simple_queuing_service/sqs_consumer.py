@@ -19,11 +19,11 @@ class SQSConsumer:
 
         self.in_queue = self.__get_queue('Student-Input')
         self.out_queue = self.__get_queue('Student-Output')
-        self.dao = dao.DAO
-        self.decimal_encoder = decimal_encoder.DecimalEncoder
+        self.dao = dao.DAO()
 
         while 1:
-            for message in self.in_queue.receive_messages():
+            for message in self.in_queue.receive_messages(MessageAttributeNames
+                                                          =['RESTVerb']):
                 self.__process_message(message)
 
             time.sleep(10)
@@ -75,8 +75,6 @@ class SQSConsumer:
                                     MessageAttributeS=message_attributes)
 
     def __bad_formatted_message_attributes(self, message):
-        print(message.message_attributes)
-
         if message.message_attributes is None:
             return True
 
@@ -105,7 +103,10 @@ class SQSConsumer:
         return False
 
     def __process_get_request(self, message):
-        id = message.message_attributes.get('id').get('StringValue')
+        id = None
+
+        if message.message_attributes.get('id') is not None:
+            id = message.message_attributes.get('id').get('StringValue')
 
         response = self.dao.query(id)
 
@@ -121,14 +122,10 @@ class SQSConsumer:
         self.__send_message(response)
 
     def __process_put_request(self, message):
-        id = message.message_attributes.get('id').get('StringValue')
-        grade = message.message_attributes.get('grade').get('StringValue')
+        id, grade = self.__get_keys(message)
 
-        if self.__bad_formatted_message_body(message.message_body):
-            self.__send_bad_formatted_message(message)
-            return
-
-        if grade is None or id is None:
+        if self.__bad_formatted_message_body(message.message_body) \
+                or id is None or grade is None :
             self.__send_bad_formatted_message(message)
             return
 
@@ -137,8 +134,7 @@ class SQSConsumer:
         self.__send_message(response)
 
     def __process_delete_request(self, message):
-        id = message.message_attributes.get('id').get('StringValue')
-        grade = message.message_attributes.get('grade').get('StringValue')
+        id, grade = self.__get_keys(message)
 
         if grade is None or id is None:
             self.__send_bad_formatted_message(message)
@@ -148,10 +144,22 @@ class SQSConsumer:
 
         self.__send_bad_formatted_message(response)
 
+    def __get_keys(self, message):
+        id, grade = None, None
+
+        if message.message_attributes.get('id') is not None:
+            id = message.message_attributes.get('id').get('StringValue')
+
+        if message.message_attributes.get('grade') is not None:
+            grade = message.message_attributes.get('grade').get('StringValue')
+
+        return id, grade
+
     def __send_message(self, response):
+        print(response)
         message_body = json.dumps(response[0],
-                                  index=4,
-                                  cls=self.decimal_encoder)
+                                  indent=4,
+                                  cls=decimal_encoder.DecimalEncoder)
 
         message_attributes = {
             'HTTPStatusCode': {
