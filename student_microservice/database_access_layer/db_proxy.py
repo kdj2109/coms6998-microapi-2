@@ -29,7 +29,7 @@ class DBProxy:
 
         if id is not None:
             for item in response['Items']:
-                if item['id'] == id:
+                if item['student_id'] == id:
                     return item, 200
 
             return 'Student ' + id + ' was not found.', 404
@@ -37,18 +37,18 @@ class DBProxy:
         return response['Items'], 200
 
     def add(self, dict):
-        if self.__item_exists(dict['grade'], dict['id']):
+        if self.__item_exists(dict['student_id']):
             return 'You are attempting to overwrite an existing student.', 409
 
         self.table.put_item(Item=dict)
 
         return dict, 201
 
-    def update(self, dict, grade, id):
-        if not self.__item_exists(grade, id):
+    def update(self, dict, id):
+        if not self.__item_exists(id):
             return 'The student ' + id + ' does not exist.', 404
 
-        item = self.__get_item(grade, id)
+        item = self.__get_item(id)
 
         update_expression = self.__create_update_expression(dict, item)
         expression_attribute_values = \
@@ -56,48 +56,40 @@ class DBProxy:
 
         self.table.update_item(
             Key={
-                'grade': int(grade),
-                'id': id
+                'student_id': id
             },
             UpdateExpression=update_expression,
             ExpressionAttributeValues=expression_attribute_values
         )
 
+        dict['student_id'] = id
+
         return dict, 200
 
-    def delete(self, grade, id):
-        if not self.__item_exists(grade, id):
+    def delete(self, id):
+        if not self.__item_exists(id):
             return 'The student ' + id + ' does not exist.', 404
 
         self.table.delete_item(
             Key={
-                'grade': int(grade),
-                'id': id
+                'student_id': id
             }
         )
 
-        return 'Student ' + id + ' deleted.', 204
+        return 'Student ' + id + ' deleted.', 200
 
     def __create_table(self):
         self.dynamodb.create_table(
             TableName='Students',
             KeySchema=[
                 {
-                    'AttributeName': 'grade',
+                    'AttributeName': 'student_id',
                     'KeyType': 'HASH'  # Partition key
                 },
-                {
-                    'AttributeName': 'id',
-                    'KeyType': 'RANGE'  # Sort key
-                }
             ],
             AttributeDefinitions=[
                 {
-                    'AttributeName': 'grade',
-                    'AttributeType': 'N'
-                },
-                {
-                    'AttributeName': 'id',
+                    'AttributeName': 'student_id',
                     'AttributeType': 'S'
                 },
             ],
@@ -107,19 +99,18 @@ class DBProxy:
             }
         )
 
-    def __item_exists(self, grade, id):
-        response = self.__get_item(grade, id)
+    def __item_exists(self, id):
+        response = self.__get_item(id)
 
         if response is None:
             return False
 
         return True
 
-    def __get_item(self, grade, id):
+    def __get_item(self, id):
         response = self.table.get_item(
             Key={
-                'grade': int(grade),
-                'id': id
+                'student_id': id
             }
         )
 
@@ -141,7 +132,7 @@ class DBProxy:
         set_expression = 'SET '
 
         for key, value in dict.items():
-            if key == 'id' or key == 'grade':
+            if key == 'student_id':
                 continue
 
             set_expression += str(key) + '=:' + str(key) + ', '
@@ -149,7 +140,7 @@ class DBProxy:
         return set_expression
 
     def __create_remove_expression(self, dict, item):
-        remove_expression = 'Remove '
+        remove_expression = 'REMOVE '
 
         for key, value in item.items():
             if key not in dict:
@@ -161,7 +152,7 @@ class DBProxy:
         expression_attribute_values = {}
 
         for key, value in dict.items():
-            if key == 'grade' or key == 'id':
+            if key == 'student_id':
                 continue
 
             expression_attribute_values[':' + key] = value

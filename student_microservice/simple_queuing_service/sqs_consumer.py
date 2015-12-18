@@ -6,6 +6,16 @@ import ast
 import json
 import decoder.decimal_encoder as decimal_encoder
 
+"""
+**********************Possible additions to the code***************************
+
+    1. Can change the subscription from 'RESTVerb'
+    2. Does not currently handle schema change requests -- I would create
+       a new SQS consumer for this.
+
+*******************************************************************************
+"""
+
 
 class SQSConsumer:
     def __init__(self):
@@ -20,6 +30,13 @@ class SQSConsumer:
         self.in_queue = self.__get_queue('Student-Input')
         self.out_queue = self.__get_queue('Student-Output')
         self.dao = dao.DAO()
+
+        self.in_queue.send_message(MessageBody='test', MessageAttributes={
+            'RESTVerb': {
+                'StringValue': 'GET',
+                'DataType': 'String'
+            }
+        })
 
         while 1:
             for message in self.in_queue.receive_messages(MessageAttributeNames
