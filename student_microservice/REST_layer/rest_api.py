@@ -1,9 +1,9 @@
 from flask import Flask, request
 import argparse
-import data_access_layer.dao as dao
+from student_microservice.data_access_layer import dao
 import json
-import decoder.decimal_encoder as decimal_decoder
-import data_access_layer.config_dao as cd
+from student_microservice.decoder import decimal_encoder
+from student_microservice.data_access_layer import config_dao as cd
 
 # Create instance of application to receive requests from server
 app = Flask(__name__)
@@ -14,7 +14,7 @@ microservice_name = 'student'
 app_dao = dao.DAO()
 app_config_dao = cd.ConfigDAO()
 
-decimal_decoder = decimal_decoder.DecimalEncoder
+decimal_decoder = decimal_encoder.DecimalEncoder
 
 
 @app.route('/' + microservice_name, methods=['GET'])

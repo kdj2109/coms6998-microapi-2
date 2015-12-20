@@ -1,10 +1,10 @@
 import boto3
 import botocore.exceptions as bce
-import data_access_layer.dao as dao
+from student_microservice.data_access_layer import dao as dao
 import time
 import ast
 import json
-import decoder.decimal_encoder as decimal_encoder
+from student_microservice.decoder import decimal_encoder as decimal_encoder
 
 """
 **********************Possible additions to the code***************************

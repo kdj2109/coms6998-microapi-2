@@ -1,5 +1,5 @@
 import random
-import database_access_layer.db_proxy as db_proxy
+from student_microservice.database_access_layer import db_proxy
 import uuid
 
 

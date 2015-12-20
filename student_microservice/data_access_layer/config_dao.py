@@ -1,4 +1,4 @@
-import database_access_layer.config_db_proxy as cdbp
+from student_microservice.database_access_layer import config_db_proxy as cdbp
 
 
 class ConfigDAO:
