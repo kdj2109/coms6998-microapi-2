@@ -6,6 +6,7 @@ import botocore.exceptions as bce
 **********************Possible additions to the code***************************
 
     1. Does not update object after deleting or adding fields.
+    2. Chris --> i think it adds --> checking into deleting
 
 *******************************************************************************
 """
@@ -13,8 +14,8 @@ import botocore.exceptions as bce
 
 class ConfigDBProxy:
     def __init__(self):
-        id = 'AKIAIIWDDOJN5HGP7FVQ'
-        key = 'oLXoh8jYr6RKmLuzOl/DzBDxSSFmmntqsu5ATf4z'
+        id = ''
+        key = ''
 
         self.dynamodb = boto3.resource('dynamodb',
                                        region_name='us-west-2',
@@ -93,6 +94,9 @@ class ConfigDBProxy:
         for key in schema:
             if key == field:
                 del schema[key]
+
+                self.table.put_item(Item=schema)
+
                 return field + ' deleted.', 200
 
         return 'Field not found in the schema.', 404

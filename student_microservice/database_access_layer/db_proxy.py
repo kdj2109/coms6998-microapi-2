@@ -4,8 +4,8 @@ import botocore.exceptions as bce
 
 class DBProxy:
     def __init__(self):
-        id = 'AKIAIIWDDOJN5HGP7FVQ'
-        key = 'oLXoh8jYr6RKmLuzOl/DzBDxSSFmmntqsu5ATf4z'
+        id = ''
+        key = ''
 
         self.dynamodb = boto3.resource('dynamodb',
                                        region_name='us-west-2',
