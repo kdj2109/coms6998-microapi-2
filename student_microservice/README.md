@@ -39,11 +39,15 @@ There are two servers/python scripts that must run:
 * `DELETE` /student/{id} : delete a student
 
 ## SQS
+You can CRUD operations through SQS. The REST verb and REST URL parameters are sent as message attributes. The HTTP 
+request body is the SQS message body.
 
 # Examples
 
 ## Student REST API
 This assumes that the microservice is running on port 8000.
+
+Note: When making update, delete, or create requests you must set the `Content-Type` header to `application/json`.
 
 ### Get all students
 * Prototype: `GET http://localhost:8000/student`
@@ -126,3 +130,13 @@ You can pass in `Required` or `Optional` and `String` or `Number`.
 ### Delete a field from the schema
 * Prototype: `DELETE http://localhost:8000/student/admin/configure/{field_name}`
 * Example: `DELETE http://localhost:8000/student/admin/configure/school_address`
+
+## SQS
+For SQS operations you can use the AWS CLI. 
+
+### Get students
+`$ aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/714298587391/Student-Input --message-attributes '{"RESTVerb" : {"DataType":"String", "StringValue":"GET"}}' --message-body "{}"`
+
+### Get a student
+To get a student, you must pass an id message attribute.
+`$ aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/714298587391/Student-Input --message-attributes '{"RESTVerb" : {"DataType":"String", "StringValue":"GET"}, "student_id" : {"DataType":"String", "StringValue":"2b31cefe-6cd1-4ca5-954e-e84ab7f31be7"}}' --message-body "{}"`

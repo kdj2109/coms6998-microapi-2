@@ -1,7 +1,11 @@
 import boto3
 import botocore.exceptions as bce
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from student_microservice.data_access_layer import dao as dao
 import time
+import datetime
 import ast
 import json
 from student_microservice.decoder import decimal_encoder as decimal_encoder
@@ -31,16 +35,11 @@ class SQSConsumer:
         self.out_queue = self.__get_queue('Student-Output')
         self.dao = dao.DAO()
 
-        self.in_queue.send_message(MessageBody='test', MessageAttributes={
-            'RESTVerb': {
-                'StringValue': 'GET',
-                'DataType': 'String'
-            }
-        })
-
         while 1:
-            for message in self.in_queue.receive_messages(MessageAttributeNames
-                                                          =['RESTVerb']):
+            now = datetime.datetime.now()
+            print("Looking for messages at " + now.isoformat())
+
+            for message in self.in_queue.receive_messages(MessageAttributeNames = ['RESTVerb']):
                 self.__process_message(message)
 
             time.sleep(10)
@@ -52,6 +51,10 @@ class SQSConsumer:
             return self.sqs.create_queue(QueueName=queue_name)
 
     def __process_message(self, message):
+        now = datetime.datetime.now()
+        print("Processing message at " + now.isoformat())
+        print(message)
+
         if self.__bad_formatted_message(message):
             message.delete()
             return
@@ -121,7 +124,7 @@ class SQSConsumer:
 
     def __process_get_request(self, message):
         id = None
-
+        print(message.message_attributes)
         if message.message_attributes.get('id') is not None:
             id = message.message_attributes.get('id').get('StringValue')
 
@@ -173,6 +176,8 @@ class SQSConsumer:
         return id, grade
 
     def __send_message(self, response):
+        now = datetime.datetime.now()
+        print("Sending message at " + now.isoformat())
         print(response)
         message_body = json.dumps(response[0],
                                   indent=4,
@@ -188,3 +193,5 @@ class SQSConsumer:
         self.out_queue.send_message(MessageBody=message_body,
                                     MessageAttributes=message_attributes)
 
+
+consumer = SQSConsumer()
