@@ -140,3 +140,8 @@ For SQS operations you can use the AWS CLI.
 ### Get a student
 To get a student, you must pass an id message attribute.
 `$ aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/714298587391/Student-Input --message-attributes '{"RESTVerb" : {"DataType":"String", "StringValue":"GET"}, "student_id" : {"DataType":"String", "StringValue":"2b31cefe-6cd1-4ca5-954e-e84ab7f31be7"}}' --message-body "{}"`
+
+### Get the schema
+`$ aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/714298587391/Student-Schema-Input --message-attributes '{"RESTVerb" : {"DataType":"String", "StringValue":"GET"}}' --message-body "{}"`
+
+The response is sent to the Student-Schema-Output queue.

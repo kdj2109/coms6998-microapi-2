@@ -2,7 +2,6 @@ import boto3
 import botocore.exceptions as bce
 import sys
 import os
-
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from student_microservice.data_access_layer import config_dao as config_dao
 import time
@@ -18,11 +17,12 @@ This consumer listens for changes to the student schema.
 
 class SQSSchemaConsumer:
     def __init__(self):
-        id = 'AKIAIIWDDOJN5HGP7FVQ'
-        key = 'oLXoh8jYr6RKmLuzOl/DzBDxSSFmmntqsu5ATf4z'
+        id = 'AKIAJZUAZGI7AN3B222Q'
+        key = 'K5sWY73vZKf+pq4n2ic/Kko9cDmLdsTNlTggufX7'
+        region_name = 'us-east-1'
 
         self.sqs = boto3.resource('sqs',
-                                  region_name='us-west-2',
+                                  region_name=region_name,
                                   aws_access_key_id=id,
                                   aws_secret_access_key=key)
 
@@ -34,7 +34,7 @@ class SQSSchemaConsumer:
             now = datetime.datetime.now()
             print("Looking for messages at " + now.isoformat())
 
-            for message in self.in_queue.receive_messages(MessageAttributeNames=['Schema']):
+            for message in self.in_queue.receive_messages(MessageAttributeNames=['RESTVerb']):
                 self.__process_message(message)
 
             time.sleep(10)
@@ -57,8 +57,10 @@ class SQSSchemaConsumer:
         rest_verb = message.message_attributes.get('RESTVerb') \
             .get('StringValue')
 
+        print("Rest VERB " + rest_verb)
+
         if rest_verb.upper() == 'GET':
-            self.__process_get_request(message)
+            self.__process_get_request()
         elif rest_verb.upper() == 'POST':
             self.__process_post_request(message)
         else:
@@ -114,7 +116,7 @@ class SQSSchemaConsumer:
 
         return False
 
-    def __process_get_request(self, message):
+    def __process_get_request(self):
         response = self.config_dao.get_schema()
 
         self.__send_message(response)
