@@ -1,4 +1,33 @@
-COMS 6998 Project 2
+# COMS 6998 Project 2
+
+# Requirements
+The student microservice requires Python 3.
+
+# Installation
+1. Create a virtualenv environment in the top level directory (the directory that contains `student_microservice`.
+
+    `$ virtualenv -p python3 venv`
+2. Activate the virtualenv.
+    
+    `$ source venv/bin/activate`
+2. Install the requirements using pip.
+
+    `(venv) $ pip install -r requirements.txt`
+
+# Operation
+There are two servers/python scripts that must run:
+* HTTP REST API
+* SQS consumer
+
+1. Enter the student microservice directory.
+
+    `(venv) $ cd student_microservice`
+2. Start the HTTP REST API server by running `rest_api.py` with a port parameter.
+
+    `(venv) $ python REST_layer/rest_api.py PORT`
+3. Start the SQS student consumer by running `sqs_consumer.py`
+ 
+    `(venv) $ python simple_queuing_service/sqs_consumer.py`
 
 # API
 ## REST
