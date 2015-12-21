@@ -48,7 +48,17 @@ class ConfigDBProxy:
     def delete(self, field):
         schema = self.get_schema()
 
-        return self.__delete_field(field, schema[0])
+        new_schema = self.__delete_field(field, schema[0])
+
+        for schemaItems in new_schema:
+            if (schemaItems == "Field not found in the schema."):
+                # Can also check for 404.
+                return "Field not found in the schema. No updates."
+
+        self.table.put_item(Item=new_schema)
+
+        #return self.__delete_field(field, schema[0])
+        return 'Field found and deleted.'
 
     def __create_table(self):
         self.dynamodb.create_table(
@@ -93,15 +103,7 @@ class ConfigDBProxy:
         for key in schema:
             if key == field:
                 del schema[key]
-                return field + ' deleted.', 200
+                return schema
+                #return field + ' deleted.', 200
 
         return 'Field not found in the schema.', 404
-
-
-
-
-
-
-
-
-

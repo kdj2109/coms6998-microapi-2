@@ -126,7 +126,9 @@ class DBProxy:
         if remove_expression == 'REMOVE ':
             return set_expression[:-2]
 
-        return set_expression[:-2] + ' ' + remove_expression[:-2]
+        # Why is remove_expression truncated by 2 characters?
+        return set_expression[:-2] + ' ' + remove_expression
+        #return set_expression[:-2] + ' ' + remove_expression[:-2]
 
     def __create_set_expression(self, dict, item):
         set_expression = 'SET '
@@ -158,10 +160,3 @@ class DBProxy:
             expression_attribute_values[':' + key] = value
 
         return expression_attribute_values
-
-
-
-
-
-
-

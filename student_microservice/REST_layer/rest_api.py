@@ -24,7 +24,6 @@ decimal_decoder = decimal_encoder.DecimalEncoder
 @app.route('/' + microservice_name + '/<id>', methods=['GET'])
 def get(id=None):
     """Gets all of the students if id is None and the student with the id"""
-
     response = app_dao.query(id)
 
     # HTTP code sent from dao indicates an error
@@ -121,20 +120,53 @@ def add_fields():
 
     response = app_config_dao.add_fields(json_dict)
 
-    return json.dumps(response[0], indent=4, cls=decimal_decoder), response[1]
+
+    all_students = app_dao.query(None)
+
+    # For each student, add the new fields(s).
+    for student in all_students[0]:
+        # Get the student id.
+        student_id = student['student_id'];
+
+        # Get the list of keys from the input json.
+        for key in json_dict.keys():
+            # Add new field(s) to json object.
+            # Must have value.
+            student[key] = "nullValue";
+            response = app_dao.update(student, student_id);
+
+    # @TODO handle errors
+
+    #return json.dumps(response[0], indent=4, cls=decimal_decoder), response[1]
+    return 'New field added to schema and all students.\n';
 
 
 @app.route('/' + microservice_name + '/admin/configure/<field>',
            methods=['DELETE'])
 def delete_field(field):
     """Deletes the field from the student schema"""
-
     # student_id is the key in Dynamodb
     if field == 'student_id':
         return bad_request('You cannot delete the key.')
+    #return app_config_dao.delete_field(field)
+    retVal = app_config_dao.delete_field(field)
 
-    return app_config_dao.delete_field(field)
+    all_students = app_dao.query(None)
 
+    # For each student, remove the specified fields(s).
+    for student in all_students[0]:
+        # Get the student id.
+        student_id = student['student_id'];
+
+        # Remove field(s) from json object.
+        if field not in student:
+            continue;
+
+        del student[field];
+
+        response = app_dao.update(student, student_id);
+
+    return retVal;
 
 def valid_fields(json_dict):
     """A valid field consists of an array of length 2:
