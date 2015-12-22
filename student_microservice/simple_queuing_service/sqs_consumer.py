@@ -23,8 +23,8 @@ from student_microservice.decoder import decimal_encoder as decimal_encoder
 
 class SQSConsumer:
     def __init__(self):
-        id = 'AKIAIIWDDOJN5HGP7FVQ'
-        key = 'oLXoh8jYr6RKmLuzOl/DzBDxSSFmmntqsu5ATf4z'
+        id = 'AKIAIHVNY6LHFBXEH7NA'
+        key = '4trgJGFUzDmmNb5BoHrUpYo3UJJm2fRtnp4E5Aat'
 
         self.sqs = boto3.resource('sqs',
                                   region_name='us-west-2',
@@ -39,7 +39,7 @@ class SQSConsumer:
             now = datetime.datetime.now()
             print("Looking for messages at " + now.isoformat())
 
-            for message in self.in_queue.receive_messages(MessageAttributeNames = ['RESTVerb']):
+            for message in self.in_queue.receive_messages(MessageAttributeNames=['RESTVerb']):
                 self.__process_message(message)
 
             time.sleep(10)
@@ -142,38 +142,35 @@ class SQSConsumer:
         self.__send_message(response)
 
     def __process_put_request(self, message):
-        id, grade = self.__get_keys(message)
+        id = self.__get_keys(message)
 
         if self.__bad_formatted_message_body(message.message_body) \
-                or id is None or grade is None :
+                or id is None:
             self.__send_bad_formatted_message(message)
             return
 
-        response = self.dao.update(message.message_body, grade, id)
+        response = self.dao.update(message.message_body, id)
 
         self.__send_message(response)
 
     def __process_delete_request(self, message):
-        id, grade = self.__get_keys(message)
+        id = self.__get_keys(message)
 
-        if grade is None or id is None:
+        if id is None:
             self.__send_bad_formatted_message(message)
             return
 
-        response = self.dao.delete(grade, id)
+        response = self.dao.delete(id)
 
         self.__send_bad_formatted_message(response)
 
     def __get_keys(self, message):
-        id, grade = None, None
+        id = None
 
         if message.message_attributes.get('id') is not None:
             id = message.message_attributes.get('id').get('StringValue')
 
-        if message.message_attributes.get('grade') is not None:
-            grade = message.message_attributes.get('grade').get('StringValue')
-
-        return id, grade
+        return id
 
     def __send_message(self, response):
         now = datetime.datetime.now()

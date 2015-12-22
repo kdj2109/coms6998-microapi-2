@@ -19,6 +19,9 @@ app_config_dao = cd.ConfigDAO()
 
 decimal_decoder = decimal_encoder.DecimalEncoder
 
+@app.route('/')
+def hello():
+    return "Hello World"
 
 @app.route('/' + microservice_name, methods=['GET'])
 @app.route('/' + microservice_name + '/<id>', methods=['GET'])
@@ -152,7 +155,7 @@ def valid_fields(json_dict):
     for value in json_dict.values():
         if type(value) is dict:
             return valid_fields(value)
-        if value[0].upper() != 'REQUIRED' and value.upper() != 'OPTIONAL':
+        if value[0].upper() != 'REQUIRED' and value[0].upper() != 'OPTIONAL':
             return False
         if value[1].upper() != 'STRING' and value[1].upper() != 'NUMBER':
             return False
