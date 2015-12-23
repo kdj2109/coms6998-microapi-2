@@ -23,8 +23,8 @@ from student_microservice.decoder import decimal_encoder as decimal_encoder
 
 class SQSConsumer:
     def __init__(self):
-        id = 'AKIAIHVNY6LHFBXEH7NA'
-        key = '4trgJGFUzDmmNb5BoHrUpYo3UJJm2fRtnp4E5Aat'
+        id = ''
+        key = ''
 
         self.sqs = boto3.resource('sqs',
                                   region_name='us-west-2',
