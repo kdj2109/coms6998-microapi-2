@@ -19,10 +19,6 @@ app_config_dao = cd.ConfigDAO()
 
 decimal_decoder = decimal_encoder.DecimalEncoder
 
-@app.route('/')
-def hello():
-    return "Hello World"
-
 @app.route('/' + microservice_name, methods=['GET'])
 @app.route('/' + microservice_name + '/<id>', methods=['GET'])
 def get(id=None):
