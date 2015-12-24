@@ -141,12 +141,6 @@ def valid_fields(json_dict):
 
     Index 1: 'Required' or 'Optional'
     Index 2: 'String' or 'Number'
-
-    **********************Possible additions to the code***********************
-
-    1. Index 2 can possibly more object types (list, etc.)
-
-    ***************************************************************************
     """
 
     for value in json_dict.values():
@@ -162,12 +156,6 @@ def valid_fields(json_dict):
 
 def valid_json(json_dict, method):
     """Checks if the Json sent with the POST or PUT request is valid
-
-    **********************Possible additions to the code***********************
-
-    1. Does not handle if the field is a dict
-
-    ***************************************************************************
     """
 
     # Gets the student schema, index 0 is the schema, index 1 is the HTTP code
@@ -189,17 +177,12 @@ def valid_json(json_dict, method):
             v = json_dict[key]
 
             # Make sure the grade is K-12
-            if key == 'grade' and 0 >= v >= 12:
+            if key == 'grade' and (v < 0 or v > 12):
                 return False
-
-            # POST Json does not have to include a student_id
-            if method == 'POST' and key == 'student_id':
-                continue
 
             # Check if the value is correct
             if correct_value(value, v):
                 has_key = True
-                break
 
         # Json format is invalid
         if not has_key and value[0] == 'Required':
@@ -210,12 +193,6 @@ def valid_json(json_dict, method):
 
 def correct_value(value, v):
     """Determines if the values are correct
-
-    **********************Possible additions to the code***********************
-
-    1. Additional object types
-
-    ***************************************************************************
     """
 
     if value[1] == 'String' and type(v) != str:

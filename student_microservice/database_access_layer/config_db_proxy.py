@@ -2,20 +2,9 @@ import boto3
 import botocore.exceptions as bce
 
 
-"""
-**********************Possible additions to the code***************************
-
-    1. Does not update object after deleting or adding fields.
-    2. Chris --> i think it adds --> checking into deleting
-
-*******************************************************************************
-"""
-
-
 class ConfigDBProxy:
     def __init__(self):
-        id = ''
-        key = ''
+
 
         self.dynamodb = boto3.resource('dynamodb',
                                        region_name='us-west-2',

@@ -4,8 +4,7 @@ import botocore.exceptions as bce
 
 class DBProxy:
     def __init__(self):
-        id = ''
-        key = ''
+
 
         self.dynamodb = boto3.resource('dynamodb',
                                        region_name='us-west-2',
@@ -144,7 +143,7 @@ class DBProxy:
 
         for key, value in item.items():
             if key not in dict:
-                remove_expression += key
+                remove_expression += key + ', '
 
         return remove_expression
 

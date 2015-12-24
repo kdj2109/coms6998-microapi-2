@@ -2,29 +2,20 @@ import boto3
 import botocore.exceptions as bce
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from student_microservice.data_access_layer import dao as dao
+from student_microservice.data_access_layer import config_dao as cdao
 import time
 import datetime
 import ast
 import json
 from student_microservice.decoder import decimal_encoder as decimal_encoder
 
-"""
-**********************Possible additions to the code***************************
-
-    1. Can change the subscription from 'RESTVerb'
-    2. Does not currently handle schema change requests -- I would create
-       a new SQS consumer for this.
-
-*******************************************************************************
-"""
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 
 class SQSConsumer:
     def __init__(self):
-        id = 'AKIAIIWDDOJN5HGP7FVQ'
-        key = 'oLXoh8jYr6RKmLuzOl/DzBDxSSFmmntqsu5ATf4z'
+
 
         self.sqs = boto3.resource('sqs',
                                   region_name='us-west-2',
@@ -34,15 +25,17 @@ class SQSConsumer:
         self.in_queue = self.__get_queue('Student-Input')
         self.out_queue = self.__get_queue('Student-Output')
         self.dao = dao.DAO()
+        self.cdao = cdao.ConfigDAO()
 
         while 1:
             now = datetime.datetime.now()
             print("Looking for messages at " + now.isoformat())
 
-            for message in self.in_queue.receive_messages(MessageAttributeNames = ['RESTVerb']):
+            for message in self.in_queue.receive_messages(MessageAttributeNames
+                                                          =['RESTVerb', 'id']):
                 self.__process_message(message)
 
-            time.sleep(10)
+            time.sleep(20)
 
     def __get_queue(self, queue_name):
         try:
@@ -54,12 +47,13 @@ class SQSConsumer:
         now = datetime.datetime.now()
         print("Processing message at " + now.isoformat())
         print(message)
+        print(message.message_attributes)
 
         if self.__bad_formatted_message(message):
             message.delete()
             return
 
-        rest_verb = message.message_attributes.get('RESTVerb')\
+        rest_verb = message.message_attributes.get('RESTVerb') \
             .get('StringValue')
 
         if rest_verb.upper() == 'GET':
@@ -88,11 +82,15 @@ class SQSConsumer:
             'HTTPStatusCode': {
                 'StringValue': '400',
                 'DataType': 'Number'
+            },
+            'Correlation_Id': {
+                'StringValue': message.message_id,
+                'DataType': 'String'
             }
         }
 
         self.out_queue.send_message(MessageBody=message_body,
-                                    MessageAttributeS=message_attributes)
+                                    MessageAttributes=message_attributes)
 
     def __bad_formatted_message_attributes(self, message):
         if message.message_attributes is None:
@@ -130,52 +128,57 @@ class SQSConsumer:
 
         response = self.dao.query(id)
 
-        self.__send_message(response)
+        self.__send_message(response, message)
 
     def __process_post_request(self, message):
-        if self.__bad_formatted_message_body(message.message_body):
+        if self.__bad_formatted_message_body(message.body):
             self.__send_bad_formatted_message(message)
             return
 
-        response = self.dao.add(message.message_body)
+        if not self.__valid_json(ast.literal_eval(message.body), 'POST'):
+            self.__send_bad_formatted_message(message)
+            return
 
-        self.__send_message(response)
+        response = self.dao.add(ast.literal_eval(message.body))
+
+        self.__send_message(response, message)
 
     def __process_put_request(self, message):
-        id, grade = self.__get_keys(message)
+        id = self.__get_keys(message)
 
-        if self.__bad_formatted_message_body(message.message_body) \
-                or id is None or grade is None :
+        if self.__bad_formatted_message_body(message.body) or id is None:
             self.__send_bad_formatted_message(message)
             return
 
-        response = self.dao.update(message.message_body, grade, id)
+        if not self.__valid_json(ast.literal_eval(message.body), 'PUT'):
+            print('invalid json')
+            self.__send_bad_formatted_message(message)
+            return
 
-        self.__send_message(response)
+        response = self.dao.update(ast.literal_eval(message.body), id)
+
+        self.__send_message(response, message)
 
     def __process_delete_request(self, message):
-        id, grade = self.__get_keys(message)
+        id = self.__get_keys(message)
 
-        if grade is None or id is None:
+        if id is None:
             self.__send_bad_formatted_message(message)
             return
 
-        response = self.dao.delete(grade, id)
+        response = self.dao.delete(id)
 
-        self.__send_bad_formatted_message(response)
+        self.__send_message(response, message)
 
     def __get_keys(self, message):
-        id, grade = None, None
+        id = None
 
         if message.message_attributes.get('id') is not None:
             id = message.message_attributes.get('id').get('StringValue')
 
-        if message.message_attributes.get('grade') is not None:
-            grade = message.message_attributes.get('grade').get('StringValue')
+        return id
 
-        return id, grade
-
-    def __send_message(self, response):
+    def __send_message(self, response, message):
         now = datetime.datetime.now()
         print("Sending message at " + now.isoformat())
         print(response)
@@ -187,11 +190,56 @@ class SQSConsumer:
             'HTTPStatusCode': {
                 'StringValue': str(response[1]),
                 'DataType': 'Number'
+            },
+            'Correlation_Id': {
+                'StringValue': message.message_id,
+                'DataType': 'String'
             }
         }
 
         self.out_queue.send_message(MessageBody=message_body,
                                     MessageAttributes=message_attributes)
+
+    def __valid_json(self, json_dict, method):
+        schema = self.cdao.get_schema()
+
+        for key, value in schema[0].items():
+            # Dynamodb partition key
+            if key == 'schema_id':
+                continue
+
+            # POST Json does not have to include a student_id
+            if method == 'POST' and key == 'student_id':
+                continue
+
+            has_key = False
+
+            # Determine if the key is in the json_dict
+            if key in json_dict:
+                v = json_dict[key]
+
+                # Make sure the grade is K-12
+                if key == 'grade' and (v < 0 or v > 12):
+                    return False
+
+                # Check if the value is correct
+                if self.__correct_value(value, v):
+                    has_key = True
+
+            # Json format is invalid
+            if not has_key and value[0] == 'Required':
+                return False
+
+        return True
+
+    def __correct_value(self, value, v):
+        if value[1] == 'String' and type(v) != str:
+            return False
+
+        if value[1] == 'Number' and (type(v) != int and type(v) != float):
+            return False
+
+        return True
 
 
 consumer = SQSConsumer()
